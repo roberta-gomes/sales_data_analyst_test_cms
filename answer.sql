@@ -116,3 +116,85 @@ AND YEAR(sale_date) = 2023
 GROUP BY product_name
 ORDER BY row_number() over(order by sum(quantity) desc) 
 ;
+-- Write a query that categorizes customers into "New" (if they signed up in the last 6 months) or 
+-- "Existing" based on their sign_up_date. Include the customer_name, region, and category in the result.
+
+WITH ALL_DATA AS (
+SELECT a.customer_id, customer_name, sales_region, sign_up_date, c.product_id, product_name, 
+category, price, sale_date, quantity, total_amount, (price*quantity) as total_sales
+FROM Customers AS A
+LEFT JOIN Sales AS B
+	ON A.customer_id = B.customer_id
+LEFT JOIN Products AS C
+	ON B.product_id = C.product_id
+WHERE 1=1
+)
+
+SELECT DISTINCT
+	customer_name, sales_region, 
+	CASE WHEN DATEDIFF(DAY, sign_up_date, GETDATE()) <= 180 THEN 'New' ELSE 'Existing' end category
+FROM ALL_DATA
+WHERE 1=1
+;
+--- Write a query to return the month and year along with the total sales for each month for the last 12 months.
+
+WITH ALL_DATA AS (
+SELECT a.customer_id, customer_name, sales_region, sign_up_date, c.product_id, product_name, 
+category, price, sale_date, quantity, total_amount, (price*quantity) as total_sales
+FROM Customers AS A
+LEFT JOIN Sales AS B
+	ON A.customer_id = B.customer_id
+LEFT JOIN Products AS C
+	ON B.product_id = C.product_id
+WHERE 1=1
+)
+
+SELECT YEAR(sale_date) AS YEAR_SALE, MONTH(sale_date) AS MONTH_SALE, SUM(total_sales) AS total_sales
+FROM ALL_DATA
+WHERE 1=1
+AND sale_date >= DATEADD(MONTH, -12, GETDATE())
+GROUP BY YEAR(sale_date), MONTH(sale_date)
+ORDER BY YEAR(sale_date) DESC
+;
+--- Write a query to return the product categories that generated more than $50,000 in revenue during the last 6 months.
+
+WITH ALL_DATA AS (
+SELECT a.customer_id, customer_name, sales_region, sign_up_date, c.product_id, product_name, 
+category, price, sale_date, quantity, total_amount, (price*quantity) as total_sales
+FROM Customers AS A
+LEFT JOIN Sales AS B
+	ON A.customer_id = B.customer_id
+LEFT JOIN Products AS C
+	ON B.product_id = C.product_id
+WHERE 1=1
+),
+TABELA AS (
+SELECT category, SUM(total_amount) AS TOTAL_REVENUE
+FROM ALL_DATA
+WHERE 1=1
+AND sale_date >= DATEADD(MONTH, -6, GETDATE())
+GROUP BY category
+)
+
+SELECT * FROM TABELA
+WHERE 1=1
+AND TOTAL_REVENUE > 50000
+;
+--- Write a query to check for any sales where the total_amount doesn’t match the expected value (i.e., quantity * price).
+
+WITH ALL_DATA AS (
+SELECT a.customer_id, customer_name, sales_region, sign_up_date, c.product_id, product_name, 
+category, price, sale_date, quantity, total_amount, (price*quantity) as total_sales
+FROM Customers AS A
+LEFT JOIN Sales AS B
+	ON A.customer_id = B.customer_id
+LEFT JOIN Products AS C
+	ON B.product_id = C.product_id
+WHERE 1=1
+)
+
+SELECT * 
+FROM ALL_DATA
+WHERE 1=1
+AND total_amount != total_sales
+;
